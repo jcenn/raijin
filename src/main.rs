@@ -1,6 +1,68 @@
-use std::{env::{self, args}, fmt::Debug, fs, path::PathBuf};
+use std::{
+    env,
+    fmt::Debug,
+    fs::OpenOptions,
+    io::{Read, Write},
+    path::PathBuf,
+    str::FromStr,
+};
 
 use clap::{Args, Parser, Subcommand};
+use serde::{Deserialize, Serialize};
+
+fn main() {
+    let working_dir: PathBuf = env::current_dir().unwrap();
+    let bin_dir: PathBuf = PathBuf::from_str(&env::args().collect::<Vec<String>>()[0]).unwrap();
+    let args = RaijinArgs::parse();
+
+    println!("---DEBUG---");
+    println!("working directory location: {:?}", working_dir.display());
+    println!("bin location: {:?}", bin_dir.display());
+
+    let mut db_path = bin_dir.clone();
+    db_path.pop();
+    db_path.push("db.yml");
+
+    println!("database location: {:?}", db_path.display());
+    println!("---DEBUG---");
+
+    if args.alias.as_deref() == None && args.subcommand.is_none() {
+        print_entries(list_entries(&db_path));
+        return;
+    }
+
+    if args.alias.is_some() {
+        let v = args.alias.as_deref().unwrap();
+        // if alias is a number and less than entries.len(), go to entry by index
+        // else go to index by name
+        // else panic
+        println!("going to alias: {}", v);
+        return;
+    }
+
+    match &args.subcommand {
+        Some(CommandType::Add(command)) => {
+            if command.directory.to_str().unwrap() == ".".to_string() {
+                let entry = RjnEntry {
+                    alias: command.alias.clone(),
+                    dir: working_dir.clone(),
+                };
+                add_entry(&db_path, &entry);
+            }
+            println!("adding {:?} at {:?}", command.alias, command.directory)
+        }
+        Some(CommandType::Remove(..)) => {
+            println!("adding")
+        }
+        Some(CommandType::List) => {
+            print_entries(list_entries(&db_path));
+        }
+        Some(CommandType::Purge) => {}
+        None => todo!(),
+    }
+
+    println!("hello {:?}", args);
+}
 
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
@@ -22,6 +84,9 @@ enum CommandType {
 
     /// List all entries
     List,
+
+    /// Removes all entries
+    Purge,
 }
 
 #[derive(Debug, Args)]
@@ -39,44 +104,51 @@ struct RemoveCommand {
     alias: String,
 }
 
-fn main() {
-    let path = env::current_dir().unwrap();
-    let args = RaijinArgs::parse();
-
-    println!("location arg: {:?}", path.display());
-    // TODO: check if yaml exists, if not create a new one (ask user for permision?)
-
-    if args.alias.as_deref() == None && args.subcommand.is_none() {
-        println!("no alias provided, listing all entries");
-        print_entries(list_registered_entries());
-        return;
-    }
-    match &args.subcommand {
-        Some(CommandType::Add(command)) => {
-            println!("adding {:?} at {:?}", command.alias, command.directory)
-        }
-        Some(CommandType::Remove(..)) => {
-            println!("adding")
-        }
-        Some(CommandType::List) => {
-            println!("adding")
-        }
-        None => todo!(),
-    }
-
-    println!("hello {:?}", args);
-}
-
+#[derive(Serialize, Deserialize, Debug)]
 struct RjnEntry {
     alias: String,
     dir: PathBuf,
 }
 
 // Should I use Arc<T> instead?
-fn list_registered_entries() -> Vec<RjnEntry> {
-    vec![]
+fn list_entries(db_path: &PathBuf) -> Vec<RjnEntry> {
+    let mut db = OpenOptions::new()
+        .create(true)
+        .read(true)
+        .open(db_path)
+        .unwrap();
+    let mut content = String::new();
+    db.read_to_string(&mut content).unwrap();
+    println!("content: {}", &content);
+    let entries: Vec<RjnEntry> = serde_yaml::from_str(&content).unwrap();
+    return entries;
+}
+
+fn add_entry(db_path: &PathBuf, entry: &RjnEntry) {
+    let mut db = OpenOptions::new()
+        .create(true)
+        .read(true)
+        .open(db_path)
+        .unwrap();
+    let mut entries = list_entries(db_path);
+    entries.push(RjnEntry {
+        alias: entry.alias.clone(),
+        dir: entry.dir.clone(),
+    });
+
+    let mut db = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(db_path)
+        .unwrap();
+    db.write_all(serde_yaml::to_string(&entries).unwrap().as_bytes())
+        .unwrap();
 }
 
 fn print_entries(entries: Vec<RjnEntry>) {
-    println!("entries: ");
+    println!("id\talias\tdir");
+    for i in 0..entries.len() {
+        let e = &entries[i];
+        println!("{}\t{}\t{}", i, e.alias, e.dir.to_str().unwrap());
+    }
 }
