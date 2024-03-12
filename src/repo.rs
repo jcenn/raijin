@@ -38,9 +38,18 @@ pub fn list_entries(db_path: &PathBuf) -> Vec<RjnEntry> {
 }
 
 pub fn add_entry(db_path: &PathBuf, entry: &RjnEntry) -> Result<(), ()> {
-    println!("db path: {}", db_path.display());
     //TODO: check if entry with that alias doesn't already exist
     let mut entries = list_entries(db_path);
+    if entries
+        .iter()
+        .filter(|x| x.alias == entry.alias)
+        .collect::<Vec<&RjnEntry>>()
+        .len()
+        > 0
+    {
+        return Err(());
+    }
+
     entries.push(RjnEntry {
         alias: entry.alias.clone(),
         dir: entry.dir.clone(),
@@ -58,9 +67,41 @@ pub fn add_entry(db_path: &PathBuf, entry: &RjnEntry) -> Result<(), ()> {
 }
 
 pub fn remove_entry(db_path: &PathBuf, alias: &str) -> Result<(), ()> {
+    let entries = list_entries(db_path);
+    let mut db = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(db_path)
+        .unwrap();
+    let num = alias.parse::<u16>();
+    let mut filtered: Vec<&RjnEntry>;
+    if let Ok(num) = num {
+        if num < entries.len() as u16 {
+            filtered = entries.iter().collect();
+            filtered.remove(num.into());
+            db.write_all(serde_yaml::to_string(&filtered).unwrap().as_bytes())
+                .unwrap();
+            return Ok(());
+        }
+    }
+    let filtered = entries
+        .iter()
+        .filter(|x| x.alias != alias)
+        .collect::<Vec<&RjnEntry>>();
+    if filtered.len() == entries.len(){
+        println!("Err: No entry matches provided criteria");
+        return Err(());
+    }
+    db.write_all(serde_yaml::to_string(&filtered).unwrap().as_bytes())
+        .unwrap();
     Ok(())
 }
 
 pub fn purge_repo(db_path: &PathBuf) -> Result<(), ()> {
+    let _db = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(db_path)
+        .unwrap();
     Ok(())
 }

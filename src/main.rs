@@ -1,7 +1,12 @@
 mod repo;
 mod rjn_args;
 use core::panic;
-use std::{env, io::{self, Write}, path::PathBuf, process::Command, str::FromStr, u16, usize};
+use std::{
+    env,
+    io::{self, Write},
+    path::PathBuf,
+    u16, usize,
+};
 
 use crate::{
     repo::{add_entry, list_entries, remove_entry},
@@ -9,7 +14,7 @@ use crate::{
 };
 
 use clap::Parser;
-use repo::RjnEntry;
+use repo::{purge_repo, RjnEntry};
 
 fn main() {
     let working_dir: PathBuf = env::current_dir().unwrap();
@@ -62,17 +67,25 @@ fn main() {
                     alias: command.alias.clone(),
                     dir: working_dir.clone(),
                 };
-                add_entry(&db_path, &entry).unwrap();
+                match add_entry(&db_path, &entry) {
+                    Ok(_) => {}
+                    Err(_) => println!("ERR: entry with this alias already exists"),
+                };
             }
-            // println!("adding {:?} at {:?}", command.alias, command.directory)
+            println!("added {} at {}", command.alias, command.directory.display());
         }
         Some(CommandType::Remove(command)) => {
-            remove_entry(&db_path, &command.alias).unwrap();
+            match remove_entry(&db_path, &command.alias) {
+                Ok(_) => {},
+                Err(_) => {},
+            };
         }
         Some(CommandType::List) => {
             print_entries(list_entries(&db_path));
         }
-        Some(CommandType::Purge) => {}
+        Some(CommandType::Purge) => {
+            purge_repo(&db_path).unwrap()
+        }
         Some(CommandType::Info) => {}
         None => todo!(),
     }
@@ -81,6 +94,11 @@ fn main() {
 }
 
 fn print_entries(entries: Vec<RjnEntry>) {
+    if entries.len() == 0{
+        println!("No entries found, add one using [raijin add]");
+        return;
+    }
+
     // TODO: think of better padding than \t
     println!("id\talias\tdir");
     for i in 0..entries.len() {
@@ -92,7 +110,7 @@ fn print_entries(entries: Vec<RjnEntry>) {
 // Fun fact: It's not possible to change the working directory with rust, so I have to integrate
 // some bash scripts
 // Fun fact 2: source command doesn't work with my binaries for some reason
-//
+// This prints the path to the standard output which is then piped to a cd with a shell script
 fn go_to_dir(p: &PathBuf) {
     // println!("going to dir: {}", p.to_str().unwrap());
     let _ = io::stdout().write_all(p.to_str().unwrap().as_bytes());
