@@ -1,9 +1,10 @@
 ## TODO
-- purge command
-- remove command
-- better spacing when printing all entries
-- custom settings (maybe config.yml)
-
+- [x] purge command
+- [x] remove command
+- [ ] modifying existing entries
+- [ ] better spacing when printing all entries
+- [ ] custom settings (maybe config.yml)
+- [x] fix printing empty line when commands don't output anything
 
 Required some bash tinkering but finally works
 
@@ -18,10 +19,9 @@ alias rjn='source /home/jcen/custom-scripts/raijin.sh'
 
 OUTPUT=$(/home/jcen/personal/rust/raijin/target/debug/raijin $1 $2 $3)
 
-if [[ $OUTPUT = '/'* ]]
-then
+if [[ $OUTPUT = '/'* ]]; then
 	cd $OUTPUT
-else
+elif [[ -n "$OUTPUT" ]]; then
 	echo "$OUTPUT"
 fi
 ```
