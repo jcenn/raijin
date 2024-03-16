@@ -3,8 +3,12 @@
 - [x] remove command
 - [ ] modifying existing entries
 - [ ] better spacing when printing all entries
-- [ ] custom settings (maybe config.yml)
+- [ ] custom settings (config.yml)
 - [x] fix printing empty line when commands don't output anything
+
+## Plans for v2
+- Vim integration
+- use fzf for picking paths
 
 Required some bash tinkering but finally works
 
