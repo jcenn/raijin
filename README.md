@@ -1,4 +1,4 @@
-## Terminal utility made for quickly navigating between commonly used directories 
+Linux terminal utility made for quickly navigating between commonly used directories 
 
 ## TODO
 - [x] purge command
