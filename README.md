@@ -6,6 +6,7 @@ Linux terminal utility made for quickly navigating between commonly used directo
 - [ ] modifying existing entries
 - [ ] better spacing when printing all entries
 - [ ] custom settings (config.yml)
+- [ ] moving entries around(changing list IDs)
 - [x] fix printing empty line when commands don't output anything
 - [ ] publish to ppa
 ## Plans for v2
