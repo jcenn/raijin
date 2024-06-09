@@ -34,7 +34,7 @@ elif [[ -n "$OUTPUT" ]]; then
 fi
 ```
 
-dispaly usage guide
+display usage guide
 ```bash
 rjn -h
 ```
