@@ -1,4 +1,4 @@
-Linux terminal utility made for quickly navigating between commonly used directories 
+Linux terminal utility that allows for bookmarking commonly used directories and quickly switching between them 
 
 ## TODO
 - [x] purge command
